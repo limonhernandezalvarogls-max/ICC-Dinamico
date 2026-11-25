@@ -722,7 +722,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     if (!meta.codigo) meta.codigo = '';
     return { meta: meta, cols: cols, rows: rows, motivos: motivos, totalMotivos: totalMotivos, hoja: datos };
   }
-
+window.__clpReadWorkbook = readWorkbook;
   /* ---------- agregados ---------- */
   function computeState(raw, origen) {
     var m = modelFromRaw(raw);
