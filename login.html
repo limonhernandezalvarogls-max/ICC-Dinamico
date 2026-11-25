@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acceso · CLP Informe de calidad de entrega</title>
+<style>
+  :root{
+    --blue:#0610B1; --navy:#002060; --ink:#0A1330; --muted:#5C6788;
+    --sky:#C8E7F2; --line:#E3E9F6; --bg:#F2F5FD; --card:#FFFFFF;
+    --shadow:0 1px 2px rgba(10,19,48,.06),0 8px 24px -12px rgba(10,19,48,.25);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100%}
+  body{
+    font-family:"Segoe UI",Roboto,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    background:
+      radial-gradient(1200px 500px at 85% -10%, rgba(6,16,177,.10), transparent 60%),
+      radial-gradient(900px 500px at 5% 0%, rgba(200,231,242,.65), transparent 55%),
+      var(--bg);
+    color:var(--ink); -webkit-font-smoothing:antialiased;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;
+  }
+  .card{
+    width:100%;max-width:420px;background:var(--card);border-radius:16px;
+    box-shadow:var(--shadow);padding:34px 34px 28px;border:1px solid var(--line);
+  }
+  .brandmark{
+    display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;
+    border-radius:14px;background:var(--blue);color:#fff;font-weight:700;font-size:17px;
+    letter-spacing:.5px;margin-bottom:14px;
+  }
+  h1{margin:0 0 4px;font-size:22px;color:var(--navy)}
+  .sub{margin:0 0 22px;color:var(--muted);font-size:14px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:14px 0 5px}
+  input{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;
+    font:15px "Segoe UI",Arial,sans-serif;background:#fff;color:var(--ink);
+  }
+  input:focus{outline:2px solid rgba(6,16,177,.25);border-color:var(--blue)}
+  button{
+    width:100%;margin-top:20px;padding:12px 16px;border:none;border-radius:10px;
+    background:var(--blue);color:#fff;font:600 15px "Segoe UI",Arial,sans-serif;cursor:pointer;
+  }
+  button:hover{background:var(--navy)}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .msg{min-height:18px;margin-top:12px;font-size:13px;color:#B4232A;text-align:center}
+  .msg.ok{color:#2E7D32}
+  .foot{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brandmark">CLP</div>
+    <h1>Acceso a la plataforma</h1>
+    <p class="sub">Informe de calidad de entrega · zona privada</p>
+
+    <form id="fLogin" autocomplete="on">
+      <label for="email">Email</label>
+      <input id="email" type="email" required autocomplete="username" placeholder="email@empresa.com">
+      <label for="pass">Contraseña</label>
+      <input id="pass" type="password" required autocomplete="current-password" placeholder="••••••••">
+      <button type="submit" id="btnEntrar">Iniciar sesión</button>
+      <p class="msg" id="msg"></p>
+    </form>
+
+    <p class="foot">Cliente · visualiza tus informes &nbsp;·&nbsp; Administrador · panel de gestión</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    if (!window.supabase || !window.CLP_CONFIG || !window.CLP_CONFIG.supabaseUrl) {
+      document.getElementById('msg').textContent = 'Configura config.js con los datos de Supabase.';
+      return;
+    }
+    var db = window.supabase.createClient(window.CLP_CONFIG.supabaseUrl, window.CLP_CONFIG.supabaseAnonKey);
+    var f = document.getElementById('fLogin'),
+        btn = document.getElementById('btnEntrar'),
+        msg = document.getElementById('msg');
+
+    /* Si ya hay sesión, entrar directamente */
+    db.auth.getSession().then(function (s) {
+      if (s && s.data && s.data.session) location.href = '/dashboard';
+    });
+
+    f.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      btn.disabled = true;
+      msg.className = 'msg'; msg.textContent = 'Comprobando credenciales…';
+      try {
+        var r = await db.auth.signInWithPassword({
+          email: document.getElementById('email').value.trim(),
+          password: document.getElementById('pass').value
+        });
+        if (r.error) { msg.textContent = 'Credenciales incorrectas: ' + r.error.message; btn.disabled = false; return; }
+        var email = (r.data.user && r.data.user.email) || '';
+        var adm = await db.from('admins').select('email').ilike('email', email).maybeSingle();
+        location.href = (adm && adm.data) ? '/admin' : '/dashboard';
+      } catch (err) {
+        msg.textContent = 'Error: ' + err.message;
+        btn.disabled = false;
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
